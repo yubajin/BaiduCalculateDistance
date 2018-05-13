@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+		<style>
+			html {
+				height: 100%;
+			}
+			
+			body {
+				width:80%;
+				height: 100%;
+				margin: 0 auto;
+			}
+
+			#map{
+				height: 70%;
+			}
+			#display{
+				width: 600px;
+				height: 80px;
+			}
+		</style>
+		
+		<title></title>
+	</head>
+	<body>
+		<div id="map"></div>
+		<div>
+			<br /><label>距离提示:</label><br /><br />
+			<textarea id="display" disabled="disabled"></textarea>
+		</div>
+	</body>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=DZGq3fCek8Uv0wqV6tkmhyUInswcPqyo"></script>
+	<script type="text/javascript">
+	// 百度地图API功能
+		var request = document.getElementById("request");
+		var text = document.getElementById("display");
+		
+		var map = new BMap.Map("map");
+		var point = new BMap.Point(115.89352755,28.689578);
+		
+		var marker = new BMap.Marker(point);
+		map.addOverlay(marker);
+		marker.setAnimation(BMAP_ANIMATION_BOUNCE); //跳动的动画
+		
+		map.centerAndZoom(point,12);
+		map.enableScrollWheelZoom(true);//开启鼠标滚轮缩放
+		map.enableContinuousZoom(); //启用地图惯性拖拽，默认禁用
+		
+//		request.onclick = function(){
+//			timer=navigator.geolocation.watchPosition(function (pos){
+//				text.value += '经度:' + pos.coords.longitude+'\n';
+//				text.value += '纬度 :' + pos.coords.latitude+'\n';
+//				text.value += '准确度 :' + pos.coords.accuracy+'\n';
+//				text.value += '海拔 :' + pos.coords.altitude+'\n';
+//				text.value += '海拔准确度 :' + pos.coords.altitudeAcuracy+'\n';
+//				text.value += '行进方向 :' + pos.coords.heading+'\n';
+//				text.value += '地面速度 :' + pos.coords.speed+'\n';
+//				text.value += '时间戳:' + new Date(pos.timestamp)+'\n';
+		//		
+//				alert(pos.coords.longitude);
+//				alert(pos.coords.latitude);
+//				
+//				
+//	
+//			},function(err){
+//				//err.code // 失败所对应的编号
+//				alert( err.code );
+//				navigator.geolocation.clearWatch(timer);
+//			},{
+//				enableHighAcuracy : true,
+//				timeout : 100000,
+//				maximumAge : 1000*60,
+//				frequency : 1000
+//			});
+//		};
+//		
+		Number.prototype.toRadians = function(){
+			return this * Math.PI / 180;
+		}
+		
+		function distance (latitude1,longitude1,latitude2,longitude2) {
+			//R为地球的半径，以km为半径
+			var R = 6371;
+			
+			var deltaLatitude = (latitude2 - latitude1).toRadians();
+			var deltaLongitude = (longitude2 - longitude1).toRadians();
+			latitude1 = latitude1.toRadians();
+			latitude2 = latitude2.toRadians();
+			
+			var a = (Math.sin(deltaLatitude / 2)) * Math.sin(deltaLatitude/2)+ 
+					Math.cos(latitude1) * Math.cos(latitude2) *
+					(Math.sin(deltaLongitude/2)) * Math.sin(deltaLongitude/2);
+			var c = 2 * Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+			var d = R * c;
+			return d;
+				
+		}
+		
+		var pointDistance = 0;
+		
+		var hisLng = 0;
+		var hisLat = 0;
+		var count = 0;
+		
+		map.addEventListener("click",function(e){
+			count++;
+			alert("第"+count+"次点击，3为一个循环，为3时置为1");
+			if(count==3){
+				count = 1;
+				hisLng=0;
+				hisLat=0;
+			}
+			
+			text.value = "点击坐标为:"+e.point.lng +","+ e.point.lat + " ";
+			text.value += "上次点击两点距离为:"+ pointDistance + "公里";
+			
+			var getNewPoint = new BMap.Point(e.point.lng,e.point.lat);
+			var getMarker = new BMap.Marker(getNewPoint);  
+			
+			map.addOverlay(getMarker); 
+			
+			if(hisLng!=0 && hisLat!=0)
+			{
+				var getHisPoint = new BMap.Point(hisLng,hisLat);
+				var getPoly = new BMap.Polyline([getHisPoint, getNewPoint], {
+				strokeColor: "blue",
+				strokeWeight: 1,
+				strokeOpacity: 0.5
+				}); 
+				
+				alert( "上次点击经纬度:(" + getHisPoint.lng+","+getHisPoint.lat+"),"+ "本次点击经纬度:("+getNewPoint.lng+","+getNewPoint.lat+")");
+				pointDistance = distance(getHisPoint.lng,getHisPoint.lat,getNewPoint.lng,getNewPoint.lat);
+				text.value += "本次点击两点距离为:"+ pointDistance + "km";
+			}
+			
+			map.addOverlay(getPoly);
+			
+			hisLng = e.point.lng;
+			hisLat = e.point.lat;
+		})
+	</script>
+</html>
